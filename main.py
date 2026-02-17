@@ -1,6 +1,8 @@
 import streamlit as st
 import os
-from langchain.prompts import PromptTemplate
+
+# Importación moderna y directa
+from langchain_core.prompts import PromptTemplate
 from langchain_openai import OpenAI
 from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 
