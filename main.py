@@ -5,7 +5,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
 # Configuración de página
-st.set_page_config(page_title="Gemini Logo Studio", page_icon="♊", layout="wide")
+st.set_page_config(page_title="Custom logo generator para mi ttico el paudefez", page_icon="♊", layout="wide")
 
 # Estética Premium (CSS)
 st.markdown("""
