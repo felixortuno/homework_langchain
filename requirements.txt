@@ -1,5 +1,6 @@
+streamlit
 langchain
 langchain-google-genai
 langchain-community
-streamlit
 google-generativeai
+pillow
