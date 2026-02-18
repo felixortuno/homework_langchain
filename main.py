@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import time
 import io
-from utils import load_css, get_placeholder_image
+from utils import load_css, get_placeholder_image, clean_svg_code
 
 # Intentamos importar las librerías con seguridad
 try:
@@ -28,7 +28,7 @@ def main():
     col1, col2 = st.columns([3, 1])
     with col1:
         st.title("✨ Logo Studio Pro")
-        st.markdown("**Diseño de marcas impulsado por Gemini 2.0 Flash**")
+        st.markdown("**Diseño de marcas Vectoriales (SVG) con Gemini 2.0 Flash**")
     with col2:
         # Placeholder para un logo o animación si se desea
         pass
@@ -55,7 +55,7 @@ def main():
                                 st.success("✅ TIENES ACCESO a Imagen 3")
                             else:
                                 st.error("❌ NO TIENES ACCESO a Imagen 3")
-                                st.caption("Tu API Key no lista el modelo 'imagen-3.0-generate-001'.")
+                                st.caption("Usando modo SVG por defecto.")
                         except Exception as e:
                             st.error(f"Error: {e}")
 
@@ -101,96 +101,76 @@ def main():
         
         try:
             # --- FASE 1: GEMINI 2.0 FLASH PIENSA EL DISEÑO ---
-            status_container.write("💡 Generando prompt óptimo con Gemini 2.0...")
+            status_container.write("💡 Generando concepto de diseño...")
             
-            # Actualizado a gemini-2.0-flash-exp (o la versión disponible más reciente)
+            # Usamos Gemini 2.0 Flash para todo
             llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key, temperature=0.7)
             
-            prompt_template = PromptTemplate.from_template(
+            # Prompt para generar código SVG directamente
+            svg_prompt_template = PromptTemplate.from_template(
                 """
-                Actúa como un Director de Arte de clase mundial. Tu tarea es crear un prompt de generación de imagen (en INGLÉS) altamente detallado para un logo.
+                Eres un experto diseñador gráfico y programador SVG.
+                Tu tarea es crear un LOGO VECTORIAL (SVG) para una marca.
                 
-                Marca: {brand}
-                Descripción del negocio: {desc}
-                Estilo deseado: {style}
-                Paleta de Colores Preferida: {palette}
+                Detalles del Logo:
+                - Marca: {brand}
+                - Qué hace: {desc}
+                - Estilo: {style}
+                - Paleta de Colores: {palette}
                 
-                Requisitos del prompt:
-                - Debe ser descriptivo, centrado en la composición visual, colores, iluminación y estilo.
-                - Incluye palabras clave como "vector logo", "white background", "high quality", "professional design", "minimalist".
-                - Asegurate de que el prompt refleje la paleta de colores "{palette}".
-                - NO incluyas explicaciones, SOLAMENTE devuelve el prompt en inglés.
+                Instrucciones:
+                1. Crea un diseño de logo {style} creativo y profesional.
+                2. Usa formas geométricas simples, degradados (defs), y buena tipografía (usa fuentes estándar sans-serif).
+                3. El SVG debe ser perfectamente escalable, viewbox cuadrada recomendada (ej. 0 0 512 512).
+                4. Asegúrate de incluir el nombre "{brand}" en el diseño.
+                5. DEBES RESPONDER ÚNICAMENTE CON EL CÓDIGO SVG.
+                6. No incluyas markdown, ni ```xml, ni explicaciones. Solo el código raw.
                 """
             )
             
-            chain = prompt_template | llm
+            chain = svg_prompt_template | llm
+            
+            status_container.write("🎨 Escribiendo código vectorial SVG...")
             response = chain.invoke({"brand": brand, "desc": desc, "style": style, "palette": color_palette})
-            final_prompt = response.content.strip()
             
-            status_container.write("✨ Diseño conceptual creado.")
-            st.success(f"**Prompt Generado:** {final_prompt}")
+            # Limpiar y obtener el código SVG
+            svg_code = clean_svg_code(response.content)
             
-            # --- FASE 2: GENERACIÓN DE IMAGEN ---
-            status_container.update(label="🎨 Renderizando logo (Imagen 3)...", state="running")
-            
-            try:
-                # Intentamos usar Imagen 3
-                model_imagen = genai.GenerativeModel('imagen-3.0-generate-001')
-                result = model_imagen.generate_content(final_prompt)
+            if "<svg" in svg_code:
+                status_container.update(label="✅ ¡Logo Vectorial generado!", state="complete", expanded=False)
                 
-                if hasattr(result, 'parts') and result.parts:
-                    status_container.update(label="✅ ¡Logo generado con éxito!", state="complete", expanded=False)
+                st.divider()
+                col_img, col_details = st.columns([2, 1])
+                
+                # Guardar en historial
+                st.session_state.generated_logos.insert(0, {
+                    "brand": brand,
+                    "svg": svg_code,
+                    "time": time.strftime("%H:%M:%S")
+                })
+                
+                with col_img:
+                    # Renderizar SVG
+                    st.image(svg_code, caption=f"Logo Vectorial para {brand}", use_column_width=True)
+                    st.balloons()
+                
+                with col_details:
+                    st.markdown("### 📥 Resultados")
+                    st.markdown("Tu logo ha sido generado en formato **Vectorial (SVG)**.")
+                    st.info("Los SVGs son escalables infinitamente y perfectos para impresión y web.")
                     
-                    st.divider()
-                    col_img, col_details = st.columns([2, 1])
+                    # Botón de descarga SVG
+                    st.download_button(
+                        label="📥 Descargar SVG (Vector)",
+                        data=svg_code,
+                        file_name=f"logo_{brand.replace(' ', '_').lower()}.svg",
+                        mime="image/svg+xml",
+                        key="download_btn_main_svg"
+                    )
                     
-                    # Extraer datos de la imagen
-                    img_data = result.parts[0].inline_data.data
-                    
-                    # Guardar en historial
-                    st.session_state.generated_logos.insert(0, {
-                        "brand": brand,
-                        "image": img_data,
-                        "prompt": final_prompt,
-                        "time": time.strftime("%H:%M:%S")
-                    })
-                    
-                    with col_img:
-                        st.image(img_data, caption=f"Logo para {brand}", use_column_width=True)
-                        st.balloons()
-                    
-                    with col_details:
-                        st.markdown("### 📥 Resultados")
-                        st.markdown("Tu logo ha sido generado utilizando la última tecnología de Google Imagen 3.")
-                        
-                        # Botón de descarga
-                        st.download_button(
-                            label="📥 Descargar Logo Original",
-                            data=img_data,
-                            file_name=f"logo_{brand.replace(' ', '_').lower()}.png",
-                            mime="image/png",
-                            key="download_btn_main"
-                        )
-                else:
-                    raise Exception("La API no devolvió datos de imagen válidos.")
+            else:
+                raise Exception("El modelo no generó un código SVG válido.")
 
-            except Exception as img_error:
-                # Manejo elegante del error (probablemente 404 por falta de permisos)
-                status_container.update(label="⚠️ Modo Concepto Activado", state="complete", expanded=True)
-                
-                st.warning("""
-                **Nota sobre Generación de Imágenes:**
-                Tu API Key actual no tiene acceso activado para el modelo 'Imagen 3' de Google.
-                Hemos generado una **Visualización de Concepto** en su lugar.
-                """)
-                
-                # PLAN B Mejorado
-                st.markdown("---")
-                st.markdown("### 🎨 Visualización de Concepto")
-                
-                # Placeholder dinámico
-                st.image(get_placeholder_image(brand), caption="Previsualización de Estructura (Simulación)")
-                
         except Exception as e:
             status_container.update(label="❌ Error en el proceso", state="error")
             st.error(f"Ocurrió un error inesperado: {str(e)}")
@@ -204,16 +184,18 @@ def main():
         cols = st.columns(3)
         for i, logo in enumerate(st.session_state.generated_logos):
             with cols[i % 3]:
-                st.image(logo["image"], caption=f"{logo['brand']} ({logo['time']})", use_column_width=True)
-                st.download_button(
-                    label="📥 Descargar",
-                    data=logo["image"],
-                    file_name=f"history_logo_{i}.png",
-                    mime="image/png",
-                    key=f"history_btn_{i}"
-                )
-                with st.expander("Ver Prompt"):
-                    st.code(logo["prompt"], language="text")
+                if "svg" in logo:
+                     st.image(logo["svg"], caption=f"{logo['brand']} ({logo['time']})", use_column_width=True)
+                     st.download_button(
+                        label="📥 Descargar SVG",
+                        data=logo["svg"],
+                        file_name=f"history_logo_{i}.svg",
+                        mime="image/svg+xml",
+                        key=f"history_btn_{i}"
+                    )
+                else:
+                    # Soporte retroactivo para imágenes (si hubiera en la sesión anterior, aunque al reiniciar se borra)
+                    st.warning("Formato antiguo")
 
 if __name__ == "__main__":
     main()

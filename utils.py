@@ -74,3 +74,27 @@ def get_placeholder_image(brand_name):
     placeholder_color = "16213e"
     placeholder_text = brand_name.replace(" ", "+")
     return f"https://placehold.co/800x600/{placeholder_color}/FFF/png?text={placeholder_text}&font=montserrat"
+
+def clean_svg_code(code_string):
+    """
+    Limpia la respuesta del LLM para extraer solo el código SVG.
+    Elimina bloques de markdown ```xml ... ``` o ```svg ... ```.
+    """
+    code_string = code_string.strip()
+    
+    # Eliminar bloques de código markdown
+    if "```xml" in code_string:
+        code_string = code_string.replace("```xml", "").replace("```", "")
+    elif "```svg" in code_string:
+        code_string = code_string.replace("```svg", "").replace("```", "")
+    elif "```" in code_string:
+        code_string = code_string.replace("```", "")
+        
+    # Asegurarse de empezar con <svg y terminar con </svg>
+    start_index = code_string.find("<svg")
+    end_index = code_string.rfind("</svg>")
+    
+    if start_index != -1 and end_index != -1:
+        return code_string[start_index:end_index+6]
+    
+    return code_string
