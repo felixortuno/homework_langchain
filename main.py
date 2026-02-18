@@ -150,8 +150,8 @@ def main():
                 })
                 
                 with col_img:
-                    # Renderizar SVG
-                    st.image(svg_code, caption=f"Logo Vectorial para {brand}", use_column_width=True)
+                    # Renderizar SVG usando HTML para que se vea bien
+                    st.markdown(f'<div style="background: transparent; padding: 20px; border-radius: 10px; border: 1px solid #333;">{svg_code}</div>', unsafe_allow_html=True)
                     st.balloons()
                 
                 with col_details:
@@ -159,15 +159,14 @@ def main():
                     st.markdown("Tu logo ha sido generado en formato **Vectorial (SVG)**.")
                     st.info("Los SVGs son escalables infinitamente y perfectos para impresión y web.")
                     
-                    # Botón de descarga SVG
+                    # Botón de descarga SVG (convertido a bytes)
                     st.download_button(
                         label="📥 Descargar SVG (Vector)",
-                        data=svg_code,
+                        data=svg_code.encode('utf-8'),
                         file_name=f"logo_{brand.replace(' ', '_').lower()}.svg",
                         mime="image/svg+xml",
                         key="download_btn_main_svg"
                     )
-                    
             else:
                 raise Exception("El modelo no generó un código SVG válido.")
 
@@ -185,16 +184,18 @@ def main():
         for i, logo in enumerate(st.session_state.generated_logos):
             with cols[i % 3]:
                 if "svg" in logo:
-                     st.image(logo["svg"], caption=f"{logo['brand']} ({logo['time']})", use_column_width=True)
+                     # Renderizar pequeño en historial
+                     st.markdown(f'<div style="max-height: 200px; overflow: hidden; border: 1px solid #444; border-radius: 8px; padding: 10px;">{logo["svg"]}</div>', unsafe_allow_html=True)
+                     st.caption(f"{logo['brand']} ({logo['time']})")
                      st.download_button(
                         label="📥 Descargar SVG",
-                        data=logo["svg"],
+                        data=logo["svg"].encode('utf-8'),
                         file_name=f"history_logo_{i}.svg",
                         mime="image/svg+xml",
                         key=f"history_btn_{i}"
                     )
                 else:
-                    # Soporte retroactivo para imágenes (si hubiera en la sesión anterior, aunque al reiniciar se borra)
+                    # Soporte retroactivo para imágenes
                     st.warning("Formato antiguo")
 
 if __name__ == "__main__":
