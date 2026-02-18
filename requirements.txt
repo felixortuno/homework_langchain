@@ -1,5 +1,7 @@
 streamlit
 langchain
 langchain-google-genai
-requests
+langchain-community
+google-generativeai
 pillow
+requests
