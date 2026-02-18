@@ -1,6 +1,5 @@
 langchain
-langchain-core
-langchain-openai
+langchain-google-genai
 langchain-community
 streamlit
-openai
+google-generativeai
