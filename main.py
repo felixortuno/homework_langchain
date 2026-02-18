@@ -4,41 +4,39 @@ import google.generativeai as genai
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
-# Configuración de la página
-st.set_page_config(page_title="Gemini Logo Studio", page_icon="🎨", layout="wide")
+# Configuración de página
+st.set_page_config(page_title="Gemini 2.0 Logo Studio", page_icon="⚡", layout="wide")
 
-# Estilos CSS Modernos (Dark Mode Google Style)
+# Estilo CSS Moderno
 st.markdown("""
     <style>
-    .stApp { background-color: #0E1117; color: #FAFAFA; }
+    .stApp { background-color: #0e1117; color: #ffffff; }
     .stButton>button { 
-        background: linear-gradient(90deg, #4285F4, #9B72CB); 
-        color: white; border: none; border-radius: 8px; height: 50px; font-weight: bold;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6); 
+        color: white; border: none; padding: 0.5rem 1rem; border-radius: 10px; font-weight: bold;
     }
-    .stTextInput>div>div>input { border-radius: 10px; }
+    .stTextInput>div>div>input { background-color: #1f2937; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
 def main():
-    st.title("🎨 Gemini Logo Studio")
-    st.caption("Powered by Gemini 1.5 & Imagen 3")
+    st.title("⚡ Gemini 2.0 Logo Studio")
+    st.caption("Generación de Logos con la última tecnología de Google")
 
-    # --- SIDEBAR ---
     with st.sidebar:
         st.header("Configuración")
-        api_key = st.text_input("Google AI Studio Key", type="password", help="Pega tu API Key de Google aquí")
+        # Input para la API Key
+        api_key = st.text_input("Google API Key", type="password")
         
         st.divider()
-        brand = st.text_input("Nombre de la Marca")
-        desc = st.text_area("Descripción del Negocio")
-        
-        style = st.selectbox("Estilo", ["Minimalista", "3D Render", "Abstracto", "Geométrico", "Ilustración"])
-        color = st.selectbox("Color Principal", ["Azul Tecnológico", "Negro Lujo", "Verde Eco", "Naranja Vibrante"])
+        brand_name = st.text_input("Nombre de la Marca")
+        brand_desc = st.text_area("Descripción")
+        style = st.selectbox("Estilo", ["Minimalista", "Futurista", "Geométrico", "Vintage"])
+        color = st.selectbox("Color", ["Blanco y Negro", "Neón", "Pastel", "Corporativo"])
 
-    # --- ÁREA PRINCIPAL ---
-    if st.button("✨ Generar Identidad Visual"):
-        if not api_key or not brand:
-            st.warning("⚠️ Necesitas poner la API Key y el nombre de la marca.")
+    if st.button("Generar Identidad Visual"):
+        if not api_key or not brand_name:
+            st.warning("⚠️ Necesitas la API Key y el nombre de la marca.")
             return
 
         # Configuración de credenciales
@@ -46,67 +44,65 @@ def main():
         genai.configure(api_key=api_key)
 
         try:
-            # ---------------------------------------------------------
-            # PASO 1: GENERACIÓN DEL PROMPT (TEXTO) CON GEMINI
-            # ---------------------------------------------------------
-            with st.status("🧠 Gemini está diseñando el concepto...", expanded=True) as status:
+            with st.status("🧠 Gemini 2.0 está pensando...", expanded=True) as status:
                 
-                # Instanciamos el modelo de CHAT (Ojo: Usamos .invoke, no .predict)
-                llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+                # -----------------------------------------------------------
+                # CAMBIO CLAVE: Usamos 'gemini-2.0-flash'
+                # -----------------------------------------------------------
+                # Si este falla, la alternativa segura es 'gemini-1.5-pro-latest'
+                llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
                 
-                prompt_template = PromptTemplate.from_template(
-                    "Actúa como un diseñador experto. Crea un prompt en INGLÉS para generar un logo de la marca '{brand}'. "
-                    "Descripción: {desc}. Estilo: {style}. Color: {color}. "
-                    "El prompt debe ser descriptivo, pedir fondo blanco limpio, alta resolución y vector style. "
-                    "Solo devuelve el prompt, nada más."
-                )
+                # Definimos el Prompt
+                template = """
+                Eres un experto en diseño gráfico. Escribe un prompt en INGLÉS para generar un logo.
+                Marca: {brand}. Descripción: {desc}. Estilo: {style}. Color: {color}.
+                Requisitos: Fondo blanco limpio, vectores, alta calidad, sin texto realista.
+                Devuelve SOLO el prompt.
+                """
                 
-                # SINTAXIS MODERNA (LCEL): Chain = Prompt | LLM
+                prompt_template = PromptTemplate.from_template(template)
+                
+                # Cadena de LangChain (LCEL)
                 chain = prompt_template | llm
                 
-                # Ejecutamos con .invoke()
+                # Ejecutamos con invoke
                 response = chain.invoke({
-                    "brand": brand, 
-                    "desc": desc, 
-                    "style": style, 
+                    "brand": brand_name,
+                    "desc": brand_desc,
+                    "style": style,
                     "color": color
                 })
                 
-                # Extraemos el texto del objeto AIMessage
                 final_prompt = response.content
-                st.write(f"**Prompt Optimizado:** {final_prompt}")
+                st.write(f"**Prompt generado:** {final_prompt}")
                 
-                status.update(label="✅ Concepto creado. Generando imagen...", state="running")
+                status.update(label="🎨 Renderizando imagen con Imagen 3...", state="running")
 
-                # ---------------------------------------------------------
-                # PASO 2: GENERACIÓN DE IMAGEN (IMAGEN 3)
-                # ---------------------------------------------------------
-                # Intentamos usar el modelo 'imagen-3.0-generate-001'
-                # Nota: Si tu API Key no tiene permisos para Imagen, esto dará error.
+                # -----------------------------------------------------------
+                # GENERACIÓN DE IMAGEN
+                # -----------------------------------------------------------
                 try:
-                    # Usamos la librería directa de Google (genai) porque es más estable para imágenes que LangChain
+                    # Modelo de imagen de Google
                     imagen_model = genai.GenerativeModel('imagen-3.0-generate-001')
                     
-                    # Llamada a la API de Imagen
                     result = imagen_model.generate_images(
                         prompt=final_prompt,
                         number_of_images=1,
                     )
                     
-                    # Visualización
-                    for image in result.images:
-                        st.image(image, caption=f"Logo para {brand}", use_container_width=True)
+                    for img in result.images:
+                        st.image(img, caption=f"Logo para {brand_name}", use_container_width=True)
                         
-                    status.update(label="🎉 ¡Logo Completado!", state="complete")
+                    status.update(label="✅ ¡Éxito!", state="complete")
                     st.balloons()
                     
                 except Exception as img_error:
-                    status.update(label="⚠️ Error en Imagen", state="error")
-                    st.error(f"No se pudo generar la imagen. Tu API Key podría no tener acceso a 'Imagen 3' todavía. Error: {img_error}")
-                    st.info("💡 Intenta usar 'gemini-pro-vision' o verifica tu acceso en Google AI Studio.")
+                    st.error(f"Error generando la imagen: {img_error}")
+                    st.info("Nota: Asegúrate de que tu API Key tiene permisos para 'Imagen 3' en Google AI Studio.")
 
         except Exception as e:
-            st.error(f"Error general: {str(e)}")
+            st.error(f"Error de conexión: {str(e)}")
+            st.markdown("**Posible solución:** Verifica que tu API Key sea correcta y que tengas acceso a Gemini 2.0 en tu región.")
 
 if __name__ == "__main__":
     main()
