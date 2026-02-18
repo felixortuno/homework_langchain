@@ -1,49 +1,76 @@
 import streamlit as st
 import os
-
-# Importación moderna y directa
+# Importaciones corregidas para las versiones actuales
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import OpenAI
 from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 
-# Configura tu token de Hugging Face (Gratis)
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = "tu_token_aquí"
+# Configuración de interfaz profesional
+st.set_page_config(page_title="AI Logo Studio Pro", page_icon="🚀", layout="wide")
 
-# 1. El "Cerebro": Usamos un modelo potente y gratuito (ej: Mistral o Llama 3)
-llm_endpoint = HuggingFaceEndpoint(
-    repo_id="mistralai/Mistral-7B-Instruct-v0.3",
-    task="text-generation",
-    temperature=0.5
-)
-llm = ChatHuggingFace(llm=llm_endpoint)
+# Estética avanzada con CSS
+st.markdown("""
+    <style>
+    .stApp { background-color: #050505; color: white; }
+    .stButton>button { background: linear-gradient(45deg, #ff4b4b, #ff7575); color: white; border: none; font-weight: bold; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# 2. La "Mano": Herramienta para generar el logo usando Stable Diffusion
-def generate_logo(prompt):
-    # Usamos una API gratuita de Hugging Face para Stable Diffusion
-    from huggingface_hub import InferenceClient
-    client = InferenceClient(token=os.environ["HUGGINGFACEHUB_API_TOKEN"])
-    
-    # Optimizamos el prompt para que parezca un logo profesional
-    enriched_prompt = f"Professional logo design, flat vector, minimalist, white background, high quality, {prompt}"
-    
-    image = client.text_to_image(enriched_prompt, model="stabilityai/stable-diffusion-xl-base-1.0")
-    image.save("logo_generado.png")
-    return "Logo generado con éxito y guardado como 'logo_generado.png'"
+def main():
+    st.title("🎨 AI Logo Designer")
+    st.write("Generador de identidad visual de alto nivel.")
 
-logo_tool = Tool(
-    name="LogoGenerator",
-    func=generate_logo,
-    description="Útil para crear logos. Debes pasarle una descripción visual detallada."
-)
+    # Sidebar: Controles de usuario
+    with st.sidebar:
+        st.header("⚙️ Configuración")
+        api_key = st.text_input("OpenAI API Key", type="password")
+        
+        concept = st.text_input("Nombre o concepto de la marca")
+        style = st.selectbox("Estilo", ["Minimalista", "Futurista", "Retro", "Lujo"])
+        palette = st.selectbox("Colores", ["Vibrante", "Pastel", "Monocromo", "Dorado y Negro"])
+        
+        # Parámetros avanzados
+        st.divider()
+        detail = st.select_slider("Detalle", options=["Bajo", "Medio", "Alto"])
+        aspect = st.radio("Relación de aspecto", ["1:1", "16:9"])
 
-# 3. El Agente
-agent = initialize_agent(
-    tools=[logo_tool],
-    llm=llm,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-    handle_parsing_errors=True
-)
+    # Lógica de generación
+    if st.button("Generar Logo Profesional"):
+        if not api_key or not concept:
+            st.warning("Falta la API Key o el concepto de la marca.")
+            return
 
-# 4. Prueba
-agent.invoke({"input": "Diseña un logo minimalista para una tienda de surf llamada 'Blue Wave'. Usa tonos azules y formas orgánicas."})
+        # Configuramos el entorno para LangChain
+        os.environ["OPENAI_API_KEY"] = api_key
+
+        with st.spinner("Diseñando tu logo..."):
+            try:
+                # 1. Definición del Prompt Dinámico (Capa de IA)
+                template = """
+                Eres un experto en branding. Crea un logo para: {concept}.
+                Estilo: {style}. Paleta de colores: {palette}.
+                Nivel de detalle: {detail}.
+                Instrucciones: Fondo blanco sólido, vectorizado, simétrico, alta resolución.
+                """
+                prompt = PromptTemplate.from_template(template)
+                formatted_prompt = prompt.format(
+                    concept=concept, 
+                    style=style, 
+                    palette=palette, 
+                    detail=detail
+                )
+
+                # 2. Conector DALL-E 3
+                dalle = DallEAPIWrapper(model="dall-e-3")
+                image_url = dalle.run(formatted_prompt)
+
+                # 3. Presentación de resultados
+                st.image(image_url, caption=f"Logo para {concept}", use_container_width=True)
+                st.success("¡Logo generado!")
+                st.balloons()
+
+            except Exception as e:
+                st.error(f"Error técnico: {str(e)}")
+
+if __name__ == "__main__":
+    main()
