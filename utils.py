@@ -1,77 +1,116 @@
 import streamlit as st
 
 def load_css():
-    """Carga los estilos CSS personalizados para la aplicación."""
+    """Carga los estilos CSS personalizados para la aplicación (Minimalista & Moderno)."""
     st.markdown("""
     <style>
-        /* Importamos una fuente moderna */
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        /* Importamos fuente moderna 'Outfit' */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
 
         html, body, [class*="css"] {
             font-family: 'Outfit', sans-serif;
-        }
-
-        /* Fondo oscuro y elegante */
-        .stApp {
-            background: radial-gradient(circle at top left, #1a1a2e, #16213e, #0f3460);
             color: #e0e0e0;
         }
 
-        /* Títulos con gradiente */
-        h1, h2, h3 {
-            background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+        /* Fondo General - Oscuro Mate */
+        .stApp {
+            background-color: #0e1117;
+            background-image: radial-gradient(circle at 50% 0%, #1c2333 0%, #0e1117 60%);
+            background-attachment: fixed;
+        }
+
+        /* Títulos */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+        h1 {
+            background: linear-gradient(to right, #ffffff, #a0a0a0);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-weight: 700;
         }
 
-        /* Sidebar personalizado */
+        /* Sidebar - Discreto y Limpio */
         [data-testid="stSidebar"] {
-            background-color: rgba(22, 33, 62, 0.95);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: #161920;
+            border-right: 1px solid #2d313a;
+        }
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+             color: #d0d0d0;
         }
 
-        /* Inputs estilizados */
+        /* Inputs y Selects */
         .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div>div {
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-radius: 12px;
+            background-color: #1e232d;
+            border: 1px solid #353a47;
+            color: #f7f7f7;
+            border-radius: 8px;
+            font-weight: 400;
         }
-        .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
-            border-color: #00d2ff;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+        .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus, .stSelectbox>div>div>div:focus {
+            border-color: #5d6679;
+            box-shadow: none;
         }
 
-        /* Botón Principal */
+        /* Botones - Minimalistas */
         .stButton>button {
             width: 100%;
-            border-radius: 12px;
-            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #000000;
             border: none;
-            color: white;
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+            font-weight: 500;
+            padding: 0.6rem 1.2rem;
+            transition: all 0.2s ease;
         }
         .stButton>button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.5);
+            background-color: #e0e0e0;
+            transform: translateY(-1px);
+        }
+        /* Botón Secundario (si lo hubiera) */
+        .stButton>button[kind="secondary"] {
+            background-color: transparent;
+            border: 1px solid #484f60;
+            color: #ffffff;
+        }
+        .stButton>button[kind="secondary"]:hover {
+            border-color: #ffffff;
         }
 
-        /* Contenedores de estado */
+        /* Contenedores y Cards */
+        div[data-testid="stExpander"] {
+            background-color: transparent;
+            border: none;
+        }
+        
+        /* Ajustes de espaciado */
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+        
+        /* Links */
+        a {
+            color: #7b96b8;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Status Container limpio */
         .stStatusWidget {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+             background-color: #1e232d;
+             border: 1px solid #353a47;
+             border-radius: 8px;
         }
     </style>
     """, unsafe_allow_html=True)
 
 def get_placeholder_image(brand_name):
-    """Genera una URL para una imagen placeholder."""
-    placeholder_color = "16213e"
+    """Genera una URL para una imagen placeholder con estilo minimalista."""
+    placeholder_color = "000000" # Negro puro para placeholder
     placeholder_text = brand_name.replace(" ", "+")
     return f"https://placehold.co/800x600/{placeholder_color}/FFF/png?text={placeholder_text}&font=montserrat"
 
