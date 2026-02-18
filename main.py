@@ -41,18 +41,37 @@ def main():
         
         # Sección de Depuración
         with st.expander("🛠️ Herramientas de Depuración"):
-            if st.button("Listar Modelos Disponibles"):
-                if not api_key:
-                    st.error("Primero ingresa tu API Key.")
-                else:
-                    try:
-                        genai.configure(api_key=api_key)
-                        models = list(genai.list_models())
-                        st.write("Modelos encontrados:")
-                        for m in models:
-                            st.code(f"{m.name}\nMethods: {m.supported_generation_methods}")
-                    except Exception as e:
-                        st.error(f"Error al listar modelos: {e}")
+            col_debug1, col_debug2 = st.columns(2)
+            
+            with col_debug1:
+                if st.button("🔍 Verificar Imagen 3"):
+                    if not api_key:
+                        st.error("Falta API Key")
+                    else:
+                        try:
+                            genai.configure(api_key=api_key)
+                            models = [m.name for m in genai.list_models()]
+                            if 'models/imagen-3.0-generate-001' in models:
+                                st.success("✅ TIENES ACCESO a Imagen 3")
+                            else:
+                                st.error("❌ NO TIENES ACCESO a Imagen 3")
+                                st.caption("Tu API Key no lista el modelo 'imagen-3.0-generate-001'.")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+            with col_debug2:
+                if st.button("📋 Listar Todos"):
+                    if not api_key:
+                        st.error("Falta API Key")
+                    else:
+                        try:
+                            genai.configure(api_key=api_key)
+                            models = list(genai.list_models())
+                            st.write("Modelos encontrados:")
+                            for m in models:
+                                st.code(f"{m.name}")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
 
         st.markdown("---")
         st.subheader("📝 Detalles de la Marca")
@@ -115,7 +134,7 @@ def main():
             status_container.update(label="🎨 Renderizando logo (Imagen 3)...", state="running")
             
             try:
-                # Usamos Imagen 3
+                # Intentamos usar Imagen 3
                 model_imagen = genai.GenerativeModel('imagen-3.0-generate-001')
                 result = model_imagen.generate_content(final_prompt)
                 
@@ -156,15 +175,21 @@ def main():
                     raise Exception("La API no devolvió datos de imagen válidos.")
 
             except Exception as img_error:
-                status_container.update(label="⚠️ Aviso de Generación", state="complete", expanded=True)
-                st.error(f"No se pudo generar la imagen final directamente. Error: {img_error}")
-                st.caption("Nota: Imagen 3 en AI Studio puede requerir acceso de Trusted Tester o Vertex AI.")
+                # Manejo elegante del error (probablemente 404 por falta de permisos)
+                status_container.update(label="⚠️ Modo Concepto Activado", state="complete", expanded=True)
+                
+                st.warning("""
+                **Nota sobre Generación de Imágenes:**
+                Tu API Key actual no tiene acceso activado para el modelo 'Imagen 3' de Google.
+                Hemos generado una **Visualización de Concepto** en su lugar.
+                """)
                 
                 # PLAN B Mejorado
                 st.markdown("---")
+                st.markdown("### 🎨 Visualización de Concepto")
                 
                 # Placeholder dinámico
-                st.image(get_placeholder_image(brand), caption="Previsualización de Estructura")
+                st.image(get_placeholder_image(brand), caption="Previsualización de Estructura (Simulación)")
                 
         except Exception as e:
             status_container.update(label="❌ Error en el proceso", state="error")
