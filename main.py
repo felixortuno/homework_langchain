@@ -39,6 +39,21 @@ def main():
         st.header("⚙️ Configuración")
         api_key = st.text_input("Google API Key", type="password", help="Tu clave de API de Google AI Studio")
         
+        # Sección de Depuración
+        with st.expander("🛠️ Herramientas de Depuración"):
+            if st.button("Listar Modelos Disponibles"):
+                if not api_key:
+                    st.error("Primero ingresa tu API Key.")
+                else:
+                    try:
+                        genai.configure(api_key=api_key)
+                        models = list(genai.list_models())
+                        st.write("Modelos encontrados:")
+                        for m in models:
+                            st.code(f"{m.name}\nMethods: {m.supported_generation_methods}")
+                    except Exception as e:
+                        st.error(f"Error al listar modelos: {e}")
+
         st.markdown("---")
         st.subheader("📝 Detalles de la Marca")
         brand = st.text_input("Nombre de la Marca", placeholder="Ej: NebulaTech")
