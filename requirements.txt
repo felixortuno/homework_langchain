@@ -1,5 +1,5 @@
 streamlit
 langchain
 langchain-google-genai
-google-cloud-aiplatform
+requests
 pillow

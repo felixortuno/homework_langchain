@@ -1,113 +1,126 @@
 import streamlit as st
 import os
+import requests
+import json
+import base64
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
-# --- IMPORTACIONES PARA VERTEX AI (CUENTA DE PAGO) ---
-import vertexai
-from vertexai.preview.vision_models import ImageGenerationModel
-
 # Configuración de página
-st.set_page_config(page_title="Vertex AI Logo Studio", page_icon="☁️", layout="wide")
+st.set_page_config(page_title="Gemini 2.0 Logo Studio", page_icon="⚡", layout="wide")
 
-# Estilo CSS
+# Estilos CSS
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; color: #ffffff; }
+    .stApp { background-color: #050505; color: #ffffff; }
     .stButton>button { 
-        background: linear-gradient(90deg, #4285F4, #34A853); 
+        background: linear-gradient(90deg, #4F46E5, #7C3AED); 
         color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: bold;
     }
-    .stTextInput>div>div>input { background-color: #1f2937; color: white; }
+    .stTextInput>div>div>input { background-color: #1f2937; color: white; border: 1px solid #374151; }
     </style>
     """, unsafe_allow_html=True)
 
+def generate_image_rest(api_key, prompt):
+    """Genera imagen usando la API REST directamente para evitar errores de librería"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key={api_key}"
+    
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "instances": [{"prompt": prompt}],
+        "parameters": {"sampleCount": 1, "aspectRatio": "1:1"}
+    }
+    
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code != 200:
+        raise Exception(f"Error API Imagen ({response.status_code}): {response.text}")
+    
+    # Decodificar la imagen en base64
+    try:
+        predictions = response.json().get('predictions', [])
+        if not predictions:
+            raise Exception("No se generó ninguna imagen.")
+        
+        # La API devuelve la imagen en base64
+        bytes_base64 = predictions[0]['bytesBase64Encoded']
+        return base64.b64decode(bytes_base64)
+    except Exception as e:
+        raise Exception(f"Error procesando imagen: {str(e)}")
+
 def main():
-    st.title("☁️ Vertex AI Logo Studio (Pro)")
-    st.caption("Usando tu cuenta profesional de Google Cloud")
+    st.title("⚡ Gemini 2.0 Logo Studio")
+    st.caption("Powered by Gemini 2.0 Flash & Imagen 3")
 
     with st.sidebar:
-        st.header("Credenciales de Google Cloud")
-        st.info("Estos datos están en tu consola de Google Cloud.")
-        # Inputs para Vertex AI
-        project_id = st.text_input("Google Cloud Project ID", placeholder="ej: mi-proyecto-123")
-        location = st.text_input("Región", value="us-central1", placeholder="us-central1")
-        # La API Key sigue siendo necesaria para la parte de texto (Gemini) via LangChain
-        api_key = st.text_input("API Key (para Gemini)", type="password")
-
+        st.header("Configuración")
+        # Usamos la API Key estándar (AI Studio)
+        api_key = st.text_input("Google API Key", type="password", help="Tu clave de Google AI Studio")
+        
         st.divider()
-        st.header("Diseño")
-        brand = st.text_input("Marca")
+        brand_name = st.text_input("Marca")
         desc = st.text_area("Descripción")
-        style = st.selectbox("Estilo", ["Minimalista", "Corporativo", "Abstracto 3D", "Emblema"])
+        style = st.selectbox("Estilo", ["Minimalista", "Futurista", "Geométrico", "3D Render"])
+        color = st.selectbox("Color", ["Blanco y Negro", "Neón", "Pastel", "Oro y Negro"])
 
-    if st.button("🚀 Generar con Vertex AI"):
-        if not api_key or not project_id or not location or not brand:
-            st.warning("⚠️ Faltan datos. Asegúrate de poner el Project ID, Región y API Key.")
+    if st.button("🚀 Generar con Gemini 2.0"):
+        if not api_key or not brand_name:
+            st.warning("⚠️ Necesitas introducir la API Key y el nombre.")
             return
 
-        # Configuración de entorno para LangChain
         os.environ["GOOGLE_API_KEY"] = api_key
 
         try:
-            with st.status("🧠 Gemini (Texto) está pensando...", expanded=True) as status:
-                # ---------------------------------------------------------
-                # PASO 1: GEMINI GENERA EL PROMPT (Usando LangChain)
-                # ---------------------------------------------------------
-                # Usamos gemini-1.5-pro que es muy estable para esto
-                llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro")
+            # ---------------------------------------------------------
+            # PASO 1: TEXTO (Gemini 2.0 Flash)
+            # ---------------------------------------------------------
+            with st.status("🧠 Gemini 2.0 está diseñando...", expanded=True) as status:
+                
+                # CAMBIO CLAVE: Usamos 'gemini-2.0-flash'
+                llm = ChatGoogleGenerativeAI(
+                    model="gemini-2.0-flash",
+                    google_api_key=api_key,
+                    temperature=0.7
+                )
                 
                 template = """
-                Crea un prompt detallado en INGLÉS para un logo profesional.
-                Marca: {brand}. Descripción: {desc}. Estilo: {style}.
-                Requisitos: Fondo blanco sólido, vectorial, alta calidad, sin texto realista.
-                Devuelve SOLO el prompt.
+                Actúa como Director de Arte. Crea un prompt en INGLÉS para generar un logo.
+                Marca: {brand}. Descripción: {desc}. Estilo: {style}. Color: {color}.
+                Requisitos: Fondo blanco sólido, vectorial, alta resolución, sin texto complejo.
+                Devuelve SOLO el prompt del logo.
                 """
-                prompt_chain = PromptTemplate.from_template(template) | llm
                 
-                response = prompt_chain.invoke({"brand": brand, "desc": desc, "style": style})
+                chain = PromptTemplate.from_template(template) | llm
+                response = chain.invoke({
+                    "brand": brand_name,
+                    "desc": desc,
+                    "style": style,
+                    "color": color
+                })
+                
                 final_prompt = response.content
-                st.write(f"**Prompt Maestro:** {final_prompt}")
+                st.write(f"**Prompt generado:** {final_prompt}")
                 
-                status.update(label="🎨 Vertex AI (Imagen 3) está renderizando...", state="running")
+                status.update(label="🎨 Generando imagen (Imagen 3)...", state="running")
 
                 # ---------------------------------------------------------
-                # PASO 2: IMAGEN 3 (Usando SDK Oficial de Vertex AI)
+                # PASO 2: IMAGEN (Llamada Directa REST)
                 # ---------------------------------------------------------
                 try:
-                    # 1. Inicializar Vertex AI con tu proyecto y región
-                    vertexai.init(project=project_id, location=location)
+                    # Usamos nuestra función personalizada que no falla por versiones
+                    image_bytes = generate_image_rest(api_key, final_prompt)
                     
-                    # 2. Cargar el modelo Imagen 3
-                    model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
+                    st.image(image_bytes, caption=f"Logo para {brand_name}", use_container_width=True)
+                    status.update(label="✅ ¡Éxito!", state="complete")
+                    st.balloons()
                     
-                    # 3. Generar la imagen
-                    images = model.generate_images(
-                        prompt=final_prompt,
-                        number_of_images=1,
-                        aspect_ratio="1:1"
-                    )
-                    
-                    # 4. Mostrar resultado
-                    if images:
-                        # Las imágenes de Vertex vienen en un formato especial, se muestran así:
-                        st.image(images[0]._pil_image, caption=f"Logo Pro para {brand}", use_container_width=True)
-                        status.update(label="✅ ¡Logo Profesional Generado!", state="complete")
-                        st.balloons()
-                    else:
-                        status.update(label="⚠️ No se generó ninguna imagen.", state="error")
-
-                except Exception as vertex_error:
-                    st.error(f"Error en Vertex AI: {vertex_error}")
-                    st.markdown("""
-                    **Posibles causas con cuenta de pago:**
-                    1. ¿Está habilitada la **API de Vertex AI** en tu proyecto de Google Cloud?
-                    2. ¿Es correcto el **Project ID**?
-                    3. ¿La **Región** (ej. `us-central1`) soporta Imagen 3?
-                    """)
+                except Exception as img_error:
+                    st.error(f"Fallo en Imagen: {str(img_error)}")
+                    st.info("💡 Si falla la imagen, verifica que tu API Key tenga habilitado 'Google AI Studio' y créditos.")
 
         except Exception as e:
             st.error(f"Error general: {str(e)}")
+            st.markdown("**Nota:** Si ves un error 404 aquí, asegúrate de que estás usando una API Key válida de [Google AI Studio](https://aistudio.google.com/).")
 
 if __name__ == "__main__":
     main()
